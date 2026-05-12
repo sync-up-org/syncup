@@ -1,5 +1,11 @@
 <template>
-  <div class="task-card">
+  <div
+    class="task-card"
+    :class="{ 'is-dragging': dragging }"
+    draggable="true"
+    @dragstart="onDragStart"
+    @dragend="onDragEnd"
+  >
     <p class="task-title">{{ task.title }}</p>
     <p v-if="task.description" class="task-desc">{{ task.description }}</p>
     <div class="task-card-footer">
@@ -36,12 +42,23 @@ const props = defineProps({
 const emit = defineEmits(['status-changed'])
 const taskStore = useTaskStore()
 const changing = ref(false)
+const dragging = ref(false)
 
 const statuses = [
   { value: 'pending', label: 'Pending' },
   { value: 'incomplete', label: 'In Progress' },
   { value: 'completed', label: 'Completed' },
 ]
+
+function onDragStart(e) {
+  dragging.value = true
+  e.dataTransfer.effectAllowed = 'move'
+  e.dataTransfer.setData('text/plain', JSON.stringify({ id: props.task.id, status: props.task.status }))
+}
+
+function onDragEnd() {
+  dragging.value = false
+}
 
 async function moveTo(status) {
   if (status === props.task.status) return

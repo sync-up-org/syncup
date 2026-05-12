@@ -15,7 +15,18 @@ async function request(path, options = {}) {
   }
 
   const res = await fetch(`${BASE}${path}`, { ...options, headers })
-  const data = await res.json()
+
+  let data
+  try {
+    data = await res.json()
+  } catch {
+    try {
+      const text = await res.text()
+      data = text ? { message: text.slice(0, 200) } : {}
+    } catch {
+      data = {}
+    }
+  }
 
   if (!res.ok) {
     const msg = data.message || data.error || `Request failed (${res.status})`

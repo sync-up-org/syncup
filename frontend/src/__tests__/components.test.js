@@ -35,7 +35,8 @@ describe('LoginView', () => {
 
   it('shows error when fields are empty on submit', async () => {
     const wrapper = mount(LoginView, { global: { plugins: [router] } })
-    await wrapper.find('button').trigger('click')
+    await wrapper.find('form').trigger('submit')
+    await wrapper.vm.$nextTick()
     expect(wrapper.text()).toContain('Please fill in all fields.')
   })
 
@@ -48,7 +49,7 @@ describe('LoginView', () => {
     const wrapper = mount(LoginView, { global: { plugins: [router] } })
     await wrapper.find('input[type="email"]').setValue('a@b.com')
     await wrapper.find('input[type="password"]').setValue('wrong')
-    await wrapper.find('button').trigger('click')
+    await wrapper.find('form').trigger('submit')
 
     // Wait for async error to render
     await new Promise(r => setTimeout(r, 100))
@@ -57,7 +58,7 @@ describe('LoginView', () => {
 
   it('has a link to register page', () => {
     const wrapper = mount(LoginView, { global: { plugins: [router] } })
-    expect(wrapper.text()).toContain('Sign up')
+    expect(wrapper.text()).toContain('Create one')
   })
 })
 
@@ -69,7 +70,8 @@ describe('RegisterView', () => {
 
   it('shows error when fields are empty', async () => {
     const wrapper = mount(RegisterView, { global: { plugins: [router] } })
-    await wrapper.find('button').trigger('click')
+    await wrapper.find('form').trigger('submit')
+    await wrapper.vm.$nextTick()
     expect(wrapper.text()).toContain('Please fill in all fields.')
   })
 })

@@ -16,7 +16,7 @@
         </svg>
       </button>
       <button class="btn-add-task" @click="$emit('open-add-task')">
-        <span class="plus">+</span> Add Task
+        <span class="plus">+</span> <span class="label-text">Add Task</span>
       </button>
     </div>
   </header>
