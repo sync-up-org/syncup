@@ -1,0 +1,20 @@
+.main-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+}
+.search-bar-wrap {
+  padding: 0 var(--space-xl) var(--space-sm);
+  animation: slideDown var(--duration-normal) var(--ease-out-expo);
+}
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+}
+
+@media (max-width: 480px) {
+  .search-bar-wrap {
+    padding: 0 var(--space-md) var(--space-sm);
+  }
+}

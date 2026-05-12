@@ -6,7 +6,7 @@
       class="search-input"
       type="text"
       placeholder="Search tasks..."
-      @input="taskStore.setSearch(query)"
+      @input="onSearch"
       @keyup.escape="close"
     />
     <button class="search-icon-btn" @click="close">
@@ -27,58 +27,25 @@ const taskStore = useTaskStore()
 const query = ref(taskStore.searchQuery)
 const inputRef = ref(null)
 
+let debounceTimer
+
 onMounted(() => inputRef.value?.focus())
 
+function onSearch() {
+  taskStore.setSearch(query.value)
+  clearTimeout(debounceTimer)
+  debounceTimer = setTimeout(() => {
+    taskStore.fetchTasks({ search: query.value || undefined })
+  }, 300)
+}
+
 function close() {
+  clearTimeout(debounceTimer)
   taskStore.setSearch('')
   query.value = ''
+  taskStore.fetchTasks()
   emit('close')
 }
 </script>
 
-<style scoped>
-.search-bar {
-  display: flex;
-  align-items: center;
-  background: var(--bg-secondary);
-  border-radius: var(--radius-pill);
-  padding: 0 14px;
-  gap: 8px;
-  border: 1px solid var(--border-color);
-  transition: border-color 0.2s;
-}
-
-.search-bar:focus-within {
-  border-color: var(--accent-blue);
-}
-
-.search-input {
-  flex: 1;
-  background: none;
-  border: none;
-  outline: none;
-  color: var(--text-primary);
-  font-family: 'DM Sans', sans-serif;
-  font-size: 0.95rem;
-  padding: 10px 0;
-}
-
-.search-input::placeholder {
-  color: var(--text-muted);
-}
-
-.search-icon-btn {
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  padding: 0;
-  transition: color 0.2s;
-}
-
-.search-icon-btn:hover {
-  color: var(--text-primary);
-}
-</style>
+<style scoped src="../styles/SearchBar.css"></style>
