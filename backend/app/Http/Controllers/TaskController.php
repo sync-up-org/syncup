@@ -109,7 +109,7 @@ class TaskController extends Controller
 
         $task->delete();
         return response()->json([
-            'message' => 'Successfully deleted task',
+            'message' => 'Delete Task successfully',
         ]);
     }
 }

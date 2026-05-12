@@ -310,12 +310,12 @@
                   "var j = pm.response.json();",
                   "pm.test('Status 200 with user data', () => {",
                   "    pm.expect(pm.response.code).to.eq(200);",
-                  "    pm.expect(j.data).to.have.property('id');",
-                  "    pm.expect(j.data).to.have.property('email');",
-                  "    pm.expect(j.data).to.have.property('username');",
+                  "    pm.expect(j).to.have.property('id');",
+                  "    pm.expect(j).to.have.property('email');",
+                  "    pm.expect(j).to.have.property('username');",
                   "});",
-                  "if (pm.response.code === 200 && j.data && j.data.id) {",
-                  "    pm.environment.set('user_id', j.data.id + '');",
+                  "if (pm.response.code === 200 && j.id) {",
+                  "    pm.environment.set('user_id', j.id + '');",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -933,7 +933,7 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 200 on owner delete',()=>{pm.expect(pm.response.code).to.eq(200);pm.expect(pm.response.json().message).to.include('deleted task');});"
+                  "pm.test('Status 200 on owner delete',()=>{pm.expect(pm.response.code).to.eq(200);pm.expect(pm.response.json().message).to.include('Delete Task');});"
                 ],
                 "type": "text/javascript"
               }

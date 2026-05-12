@@ -15,7 +15,13 @@ class UserController extends Controller
 {
     public function index(Request $request)
     {
-        return new UserResource($request->user());
+        $user = $request->user();
+
+        return response()->json([
+            'id' => $user->id,
+            'username' => $user->username,
+            'email' => $user->email,
+        ]);
     }
 
     public function store(Request $request)
@@ -60,15 +66,21 @@ class UserController extends Controller
     {
         $user = $request->user();
 
-        $validated = $request->validate([
+        $rules = [
             'username' => 'required|string|max:255',
             'email' => [
                 'required',
                 'email',
                 Rule::unique('users')->ignore($user->id),
             ],
-            'current_password' => 'required_with:email|string',
-        ]);
+        ];
+
+        $requestEmail = Str::of($request->input('email', ''))->trim()->lower()->toString();
+        if ($requestEmail !== $user->email) {
+            $rules['current_password'] = 'required|string';
+        }
+
+        $validated = $request->validate($rules);
 
         if ($request->filled('current_password')) {
             if (!Hash::check($validated['current_password'], $user->password)) {
@@ -79,7 +91,7 @@ class UserController extends Controller
             unset($validated['current_password']);
         }
 
-        $validated['email'] = Str::of($validated['email'])->trim()->lower()->toString();
+        $validated['email'] = $requestEmail;
         $user->update($validated);
 
         return response()->json([

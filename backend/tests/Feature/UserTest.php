@@ -35,11 +35,9 @@ class UserTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertJson([
-            'data' => [
-                'id' => $this->user->id,
-                'email' => $this->user->email,
-                'username' => $this->user->username,
-            ],
+            'id' => $this->user->id,
+            'email' => $this->user->email,
+            'username' => $this->user->username,
         ]);
     }
 
