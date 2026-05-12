@@ -30,7 +30,7 @@ const router = createRouter({
 })
 
 function isValidToken(token) {
-  return typeof token === 'string' && token.length > 20 && token.includes('|')
+  return typeof token === 'string' && /^\d+\|[a-f0-9]{40,}$/i.test(token)
 }
 
 router.beforeEach((to, from, next) => {

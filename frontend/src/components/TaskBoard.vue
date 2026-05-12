@@ -86,13 +86,19 @@ async function onDrop(e, targetStatus) {
   try {
     const raw = e.dataTransfer.getData('text/plain')
     const parsed = JSON.parse(raw)
-    if (!parsed || typeof parsed.id !== 'number') return
+    if (!parsed || !Number.isInteger(parsed.id) || parsed.id < 1) return
     const { id } = parsed
     const task = taskStore.tasks.find((t) => t.id === id)
     if (!task || task.status === targetStatus) return
 
+    const prevStatus = task.status
     task.status = targetStatus
-    await taskStore.updateTask(id, { status: targetStatus })
+    try {
+      await taskStore.updateTask(id, { status: targetStatus })
+    } catch {
+      task.status = prevStatus
+      refresh()
+    }
   } catch {
     refresh()
   }

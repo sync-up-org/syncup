@@ -74,7 +74,8 @@ async function moveTo(status) {
 }
 
 async function handleDelete() {
-  if (!window.confirm(`Delete "${props.task.title}"?`)) return
+  const safeTitle = props.task.title.replace(/["\\]/g, '').substring(0, 100)
+  if (!window.confirm(`Delete "${safeTitle}"?`)) return
   changing.value = true
   try {
     await taskStore.deleteTask(props.task.id)

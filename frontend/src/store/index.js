@@ -37,7 +37,9 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async deleteUser(id) {
-      return await api.deleteUser(id)
+      const data = await api.deleteUser(id)
+      this.logout()
+      return data
     },
 
     logout() {
