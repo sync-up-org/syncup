@@ -1,58 +1,184 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# SyncUp — Backend API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A Laravel 13 RESTful API that powers the SyncUp task management platform. Built with SQLite for local development, Sanctum for token-based authentication, and follows a service-layer architecture pattern.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Tech Stack
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+| Layer | Technology |
+|-------|-----------|
+| Framework | Laravel 13 |
+| PHP Version | 8.3 |
+| Database | SQLite (production-ready: any Laravel-supported driver) |
+| Authentication | Laravel Sanctum (token-based) |
+| Queue / Cache / Session | Database driver |
+| Testing | PHPUnit (in-memory SQLite) |
+| Code Style | Laravel Pint (default rules) |
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## Quick Start
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Prerequisites
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- PHP 8.3+ with Composer
+- SQLite3 (bundled with PHP)
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+### Setup
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer setup
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+This single command runs the full bootstrap:
+1. Installs Composer dependencies
+2. Copies `.env.example` to `.env`
+3. Generates an application key
+4. Runs database migrations
+5. Installs and builds frontend dependencies (when applicable)
 
-## Contributing
+### Development Server
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+php artisan serve --port=8080
+```
 
-## Code of Conduct
+For concurrent processes (server + queue + logs + Vite):
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+composer dev
+```
 
-## Security Vulnerabilities
+---
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Available Commands
 
-## License
+All commands run from the `backend/` directory:
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+| Command | Description |
+|---------|-------------|
+| `composer setup` | Full project bootstrap |
+| `composer dev` | Start server, queue listener, log watcher, and Vite concurrently |
+| `composer test` | `config:clear` + `php artisan test` |
+| `./vendor/bin/pint` | Format code with Laravel Pint (default rules, no config file) |
+| `php artisan serve --port=8080` | Start the development HTTP server |
+| `php artisan migrate:fresh` | Drop all tables and re-run migrations |
+| `php artisan queue:listen` | Process queued jobs (required for database queue driver) |
+
+---
+
+## Architecture
+
+### Directory Structure
+
+```
+app/
+├── Http/
+│   ├── Controllers/     # Thin controllers — validation + delegate to services
+│   │   ├── AuthController.php
+│   │   ├── TaskController.php
+│   │   └── UserController.php
+│   ├── Requests/         # Form request validation
+│   │   └── StoreTaskRequest.php
+│   └── Resources/        # API resource transformations
+│       └── TaskResource.php
+├── Http/Services/        # Business logic layer
+│   └── TaskService.php
+├── Models/               # Eloquent models
+│   ├── User.php
+│   └── Tasks.php
+└── Providers/
+    └── AppServiceProvider.php   # Rate limiter definitions, environment config
+```
+
+### API Endpoints
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/api/register` | — | Create account (`username`, `email`, `password`) |
+| POST | `/api/login` | — | Authenticate, returns `token` + `token_type` (rate-limited: 5/min) |
+| GET | `/api/v1/users/me` | Sanctum | Get authenticated user profile |
+| PATCH | `/api/v1/users/update` | Sanctum | Update profile (`username`, `email`) |
+| DELETE | `/api/v1/users/delete/{id}` | Sanctum | Delete account (self only) |
+| GET | `/api/v1/tasks/get` | Sanctum | List tasks (supports `?status=pending&search=term`) |
+| POST | `/api/v1/tasks/create` | Sanctum | Create task (`title`, `description`) |
+| PATCH | `/api/v1/tasks/update/{id}` | Sanctum | Update task (owner-only) |
+| DELETE | `/api/v1/tasks/delete/{id}` | Sanctum | Delete task (owner-only) |
+
+### Response Envelope
+
+**Success:**
+```json
+{
+  "success": true,
+  "message": "Logged in successfully",
+  "token": "1|abc123...",
+  "token_type": "Bearer"
+}
+```
+
+**Error (validation / business logic):**
+```json
+{
+  "message": "These credentials do not match our records.",
+  "errors": { "email": ["These credentials do not match our records."] }
+}
+```
+
+**Error (unauthenticated):**
+```json
+{
+  "message": "Unauthenticated."
+}
+```
+
+---
+
+## Security Audit
+
+13 vulnerabilities were identified and remediated in an initial security audit. The following table documents each finding and its resolution.
+
+| ID | Severity | Issue | Resolution |
+|----|----------|-------|-----------|
+| C-01 | **Critical** | SQL injection via unescaped `LIKE` clause in task search | Validated `search` parameter and escaped `%`/`_` wildcards with `str_replace()` |
+| C-02 | **Critical** | Token leaked in registration response due to `#[VisibleFor('*')]` on `UserResource` | Replaced implicit model exposure with explicit JSON response (no `UserResource`) |
+| H-01 | **High** | Sanctum token embedded inside `user` object in login response | Separated into dedicated `token` and `token_type` fields |
+| H-02 | **High** | No rate limiting on login endpoint | Added `throttle:login` — 5 requests per minute per email+IP |
+| H-03 | **High** | User enumeration via distinct error messages on duplicate registration | Consolidated to generic `'Registration failed. Please check your input.'` |
+| H-04 | **High** | `TaskController::index()` returned all users' tasks | Scoped query to `$request->user()->tasks()` |
+| H-05 | **High** | No ownership validation on `TaskController::update()` and `destroy()` | Added `(int) $task->user_id !== (int) Auth::id()` checks |
+| M-01 | **Medium** | Wildcard characters `%`/`_` not escaped in SQL `LIKE` | Escaped with `str_replace()` before building the LIKE pattern |
+| M-02 | **Medium** | `AuthenticationException` rendered HTML instead of 401 JSON | Configured `shouldRenderJsonWhen()` and custom `AuthenticationException` renderer in `bootstrap/app.php` |
+| M-03 | **Medium** | `ValidationException` rendered HTML on API routes | Same `shouldRenderJsonWhen()` fix forces JSON for `/api/*` routes |
+| M-04 | **Medium** | SQLite returned string IDs causing `!==` to fail in ownership checks | All comparisons use explicit `(int)` cast |
+| L-01 | **Low** | User deletion route lacked explicit `auth:sanctum` middleware | Route was already inside the `auth:sanctum` group, but scope was made explicit |
+| L-02 | **Low** | Generic `catch` returned 500 with obfuscated message | Removed `debug` field from production error response |
+
+---
+
+## Known Caveats
+
+- The `User` model `#[Fillable]` attribute lists `'name'` but the actual `$fillable` array uses `'username'`. The attribute is misleading; always trust the `$fillable` array.
+- The `down()` method in the `create_task_table` migration drops `task` (singular) before `tasks` (plural). Only `tasks` is created by `up()`.
+- Login validation error is hardcoded as `'These credentials do not match our records.'` rather than using `__('auth.failed')`. This matches Postman test expectations.
+- No CORS configuration is present. Add Sanctum stateful domains or custom CORS middleware when serving the frontend from a different origin.
+- The exception handler in `bootstrap/app.php` forces JSON responses for all `/api/*` routes and returns `401` JSON for `AuthenticationException`.
+- The `throttle:login` rate limiter (5 requests/minute per email+IP) is defined in `AppServiceProvider::boot()`.
+
+---
+
+## Testing
+
+```bash
+composer test
+```
+
+Runs all PHPUnit tests against an in-memory SQLite database:
+
+| Test Suite | Tests | Scope |
+|------------|-------|-------|
+| `AuthTest` | 9 | Registration, duplicate prevention, weak password rejection, login, rate limiting |
+| `TaskTest` | 14 | CRUD, ownership enforcement, status validation, search, wildcard escaping |
+| `UserTest` | 7 | Profile retrieval, update, self-deletion, cross-user authorization |
+| **Total** | **32** | Full coverage of all API endpoints and security boundaries |

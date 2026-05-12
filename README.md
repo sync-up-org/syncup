@@ -1,100 +1,129 @@
 # SyncUp
 
-Two independent packages — no shared monorepo tooling:
+A task management application composed of two independent packages:
 
-- **`backend/`** — Laravel 13 API (PHP 8.3, SQLite, Sanctum token auth, Queue w/ database driver)
-- **`frontend/`** — standalone Vue 3 + Vite SPA (not wired to the backend yet)
+- **`backend/`** — Laravel 13 RESTful API (PHP 8.3, SQLite, Sanctum token auth, Queue w/ database driver)
+- **`frontend/`** — Vue 3 + Vite single-page application (Pinia, Vue Router)
 
-They ship separately. The root is just a container.
+---
 
-## Commands
+## Quick Start
 
-All backend commands run from `backend/`:
+### Prerequisites
 
-```bash
-composer setup   # full bootstrap: install deps, copy .env, key:generate, migrate, npm ci + build
-composer dev     # starts 4 processes: server, queue:listen, pail (logs), vite dev
-composer test    # config:clear then php artisan test
-./vendor/bin/pint          # PHP CS fixer (Laravel Pint, no pint.json — uses defaults)
-```
+- PHP 8.3+ with Composer
+- Node.js 20+ with npm
 
-Frontend (from `frontend/`):
+### Backend
 
 ```bash
-npm run dev       # Vite dev server
-npm run build     # production build
-npm run preview   # preview production build
+cd backend
+composer setup                    # Install deps, configure .env, run migrations
+php artisan serve --port=8080     # Start the API server
 ```
+
+See [`backend/README.md`](backend/README.md) for detailed backend documentation.
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev                       # Starts Vite dev server (API proxy → :8080)
+```
+
+See [`frontend/README.md`](frontend/README.md) for detailed frontend documentation.
+
+---
 
 ## Architecture
 
-- **API prefix:** `/api/v1/` for auth-protected routes; `/api/register` and `/api/login` are public.
-- **Auth:** Laravel Sanctum. Login returns a `plainTextToken` — store and send as `Authorization: Bearer <token>`.
-- **Database:** SQLite at `backend/database/database.sqlite`. The `.env.example` uses `DB_CONNECTION=sqlite` with no explicit path (Laravel defaults to `database/database.sqlite`). Tests use `:memory:`.
-- **Queue/cache/session:** all use the `database` driver — must run `php artisan queue:listen` for queued jobs.
-- **Service layer:** business logic lives in `app/Http/Services/` (e.g., `TaskService`). Controllers call services.
-- **Frontend is not integrated** with Laravel's Vite or Blade. It's a standalone Vite project.
+### API Endpoints
 
-## Security Audit Summary
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/api/register` | — | Create a new user account |
+| POST | `/api/login` | — | Authenticate and receive a Bearer token |
+| GET | `/api/v1/users/me` | Sanctum | Get the authenticated user's profile |
+| PATCH | `/api/v1/users/update` | Sanctum | Update the authenticated user's profile |
+| DELETE | `/api/v1/users/delete/{id}` | Sanctum | Delete a user account |
+| GET | `/api/v1/tasks/get` | Sanctum | List tasks (supports `?status=` and `?search=` filters) |
+| POST | `/api/v1/tasks/create` | Sanctum | Create a new task |
+| PATCH | `/api/v1/tasks/update/{id}` | Sanctum | Update a task (owner-only) |
+| DELETE | `/api/v1/tasks/delete/{id}` | Sanctum | Delete a task (owner-only) |
 
-13 vulnerabilities were identified and fixed (2 Critical, 5 High, 4 Medium, 2 Low):
+### Key Design Decisions
 
-| ID | Severity | Issue | File |
-|---|---|---|---|
-| C-01 | Critical | SQL injection via LIKE clause in task search | `TaskController.php:33` |
-| C-02 | Critical | Token leaked in registration response (`#[VisibleFor('*')]`) | `UserResource.php` |
-| H-01 | High | Token response format — token embedded in user object | `AuthController.php:34` |
-| H-02 | High | No rate limiting on login endpoint | `api.php`, `AppServiceProvider.php` |
-| H-03 | High | User enumeration via register error messages | `UserController.php:33-38` |
-| H-04 | High | Task ownership not enforced in `index()` | `TaskController.php:25` |
-| H-05 | High | No ownership check on task `update()`/`destroy()` | `TaskController.php:67,102` |
-| M-01 | Medium | Wildcard characters unescaped in LIKE clause | `TaskController.php:32` |
-| M-02 | Medium | Auth exception renders HTML instead of 401 JSON | `bootstrap/app.php` |
-| M-03 | Medium | ValidationException renders HTML for API routes | `bootstrap/app.php` |
-| M-04 | Medium | SQLite string ID type mismatch in ownership checks | `UserController.php:91`, `TaskController.php:67,102` |
-| L-01 | Low | User deletion not scoped — `auth:sanctum` middleware missing | `UserController.php:89` (was inside group) |
-| L-02 | Low | Generic catch returning 500 with obfuscated cause | `TaskController.php:88-93` |
+- **Authentication:** Laravel Sanctum issues a `plainTextToken` on login. The client must send it as `Authorization: Bearer <token>` on all protected routes.
+- **Task Statuses:** The enum `['pending', 'incomplete', 'completed']` maps to the frontend board columns Pending / In Progress / Completed.
+- **Testing:** Backend runs PHPUnit against an in-memory SQLite database. Frontend runs Vitest with jsdom and mocked fetch.
+- **Service Layer:** Backend business logic is encapsulated in `App\Http\Services\` — controllers delegate to services rather than implementing logic directly.
+
+---
+
+## Security Audit
+
+13 vulnerabilities were identified and remediated in the initial audit:
+
+| Severity | Count | Key Issues |
+|----------|-------|------------|
+| Critical | 2 | SQL injection in task LIKE clause, token leaked in registration response |
+| High | 5 | Missing ownership checks, no rate limiting, user enumeration, token exposure |
+| Medium | 4 | Unescaped wildcards, HTML error pages on API routes, SQLite type mismatches |
+| Low | 2 | Missing auth middleware, obfuscated 500 errors |
+
+Details are documented in the [backend README](backend/README.md#security-audit).
+
+---
 
 ## Postman Testing
 
-The repo includes `postman_collection.json` and `postman_environment.json` for replication.
+The repository includes `postman_collection.json` and `postman_environment.json` for API testing.
 
 ### Setup
+
 1. **Import** `postman_collection.json` into Postman (File → Import → Upload Files)
-2. **Import** `postman_environment.json` into Postman (same process; creates environment "SyncUp API – Local")
-3. Select the "SyncUp API – Local" environment from the dropdown in Postman
+2. **Import** `postman_environment.json` into Postman (creates environment "SyncUp API – Local")
+3. Select the "SyncUp API – Local" environment from the Postman dropdown
 4. Run `php artisan migrate:fresh` from `backend/` to reset the database
 5. Start the server: `php artisan serve --port=8080`
 
-### Environment variables
-| Variable | Default | Auto-saved by | Description |
+### Environment Variables
+
+| Variable | Default | Auto-saved By | Description |
 |---|---|---|---|
 | `scheme` | `http` | — | Protocol |
 | `host` | `localhost` | — | Server host |
 | `port` | `8080` | — | Server port |
-| `auth_token` | empty | Login valid credentials | Bearer token for auth |
-| `user_email` | empty | Register user (prerequest) | First user's email |
-| `user_username` | empty | Register user (prerequest) | First user's username |
-| `user_id` | empty | Register user or Get profile | First user's ID |
-| `second_user_email` | empty | Register second user (prerequest) | Second user's email |
-| `second_user_id` | empty | Register second user | Second user's ID |
-| `task_id` | empty | Create task | Task ID for CRUD ops |
+| `auth_token` | — | Login valid credentials | Bearer token for authenticated requests |
+| `user_email` | — | Register user (pre-request) | First user's email |
+| `user_username` | — | Register user (pre-request) | First user's username |
+| `user_id` | — | Register user / Get profile | First user's ID |
+| `second_user_email` | — | Register second user (pre-request) | Second user's email |
+| `second_user_id` | — | Register second user | Second user's ID |
+| `task_id` | — | Create task | Task ID for CRUD operations |
 
-### Collection flow
-Auth → Register user → Register duplicate email → Register weak password → Login valid credentials → Login wrong password → Login nonexistent email → Users → Get profile → Get profile (no auth) → Update profile → Register second user → Tasks → (11 task operations) → Cleanup → Delete other user (unauthorized) → Delete user (self)
+### Collection Flow
 
-### Important
-- Run requests **in order** — each depends on variables saved by the previous request
-- Run `php artisan migrate:fresh` before each collection run — stale data causes unpredictable IDs and authorization failures
-- Delete operations run **last** (Cleanup folder) because self-deletion invalidates the Sanctum token. All task operations run while the token is valid
+```
+Auth ──> Register user ──> Register duplicate email ──> Register weak password
+    ──> Login valid credentials ──> Login wrong password ──> Login nonexistent email
+Users ──> Get profile ──> Get profile (no auth) ──> Update profile ──> Register second user
+Tasks ──> 11 task CRUD and filter/search operations
+Cleanup ──> Delete other user (unauthorized) ──> Delete user (self)
+```
 
-## Gotchas
+> **Important:** Run requests in order — each depends on variables saved by the previous request. Run `migrate:fresh` before each collection run. Delete operations run last because self-deletion invalidates the Sanctum token.
 
-- Root `.gitignore` blocks all `*.md` files except `README.md`. Any new `.md` file at any level will be ignored by git unless explicitly unignored.
-- `User` model has an attribute `#[Fillable(['name', ...])]` but `$fillable` uses `'username'`. The attribute is misleading; the actual fillable is the `$fillable` array.
-- The `down()` method in `create_task_table` migration drops `task` (singular) before `tasks` — only `tasks` (plural) is created by `up()`.
-- No CORS config file — if the frontend calls the API from a different origin, you'll need to handle CORS (either via Sanctum stateful domains or custom middleware).
-- Login validation error is hardcoded (`'These credentials do not match our records.'`) instead of using `__('auth.failed')` — matches Postman test expectations.
-- SQLite returns integer columns as strings — all ownership comparisons use explicit `(int)` cast to handle this.
-- Exception handler in `bootstrap/app.php` forces JSON for all `/api/*` routes and handles `AuthenticationException` with `401` JSON.
-- `throttle:login` rate limiter (5/min per email+IP) is defined in `AppServiceProvider::boot()`.
+---
+
+## Known Caveats
+
+- Root `.gitignore` blocks all `*.md` files except `README.md` — any new `.md` file at any level is ignored by git unless explicitly un-ignored.
+- The `User` model has a `#[Fillable(['name', ...])]` attribute that is misleading; the actual `$fillable` array uses `'username'`.
+- The `down()` method in the `create_task_table` migration drops `task` (singular) before `tasks` — only `tasks` (plural) is created by `up()`.
+- No CORS configuration is present. If the frontend is served from a different origin, configure Sanctum stateful domains or add CORS middleware.
+- The login validation error message is hardcoded as `'These credentials do not match our records.'` (matching Postman test expectations) rather than using `__('auth.failed')`.
+- SQLite returns integer columns as strings — all ownership comparisons use an explicit `(int)` cast.
+- The exception handler in `bootstrap/app.php` forces JSON responses for all `/api/*` routes and returns `401` JSON for `AuthenticationException`.
+- The `throttle:login` rate limiter (5 requests per minute per email+IP) is defined in `AppServiceProvider::boot()`.
