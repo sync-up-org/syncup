@@ -1,0 +1,9 @@
+{
+    "name": "femni/syncup",
+    "autoload": {
+        "psr-4": {
+            "Femni\\Syncup\\": "src/"
+        }
+    },
+    "require": {}
+}
