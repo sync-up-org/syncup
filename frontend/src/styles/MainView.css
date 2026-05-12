@@ -1,0 +1,9 @@
+.main-page {
+  min-height: 100vh;
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+}
+.search-bar-wrap {
+  padding: 0 24px 8px;
+}
