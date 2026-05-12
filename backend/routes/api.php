@@ -6,7 +6,7 @@ use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 
-Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
+Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('v1')->group(function () {
     Route::get('tasks/get', [TaskController::class, 'index']);
     Route::post('tasks/create', [TaskController::class, 'store']);
     Route::patch('tasks/update/{task}', [TaskController::class, 'update']);

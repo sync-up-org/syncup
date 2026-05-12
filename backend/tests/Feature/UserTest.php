@@ -49,6 +49,7 @@ class UserTest extends TestCase
             ->patchJson('/api/v1/users/update', [
                 'username' => 'UpdatedName',
                 'email' => 'updated@example.com',
+                'current_password' => 'password',
             ]);
 
         $response->assertStatus(200);
@@ -63,6 +64,7 @@ class UserTest extends TestCase
             ->patchJson('/api/v1/users/update', [
                 'username' => 'SomeName',
                 'email' => 'taken@example.com',
+                'current_password' => 'password',
             ]);
 
         $response->assertStatus(422);

@@ -6,6 +6,7 @@ use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
@@ -23,7 +24,7 @@ class UserController extends Controller
             $validated = $request->validate([
                 'username' => 'required|string|max:255',
                 'email' => 'required|string|email|max:255|unique:users',
-                'password' => ['required', Password::min(8)->mixedCase()->numbers()],
+                'password' => ['required', Password::min(8)->mixedCase()->numbers()->symbols()],
             ]);
         } catch (ValidationException $e) {
             if ($e->validator->errors()->has('email')) {
@@ -35,7 +36,7 @@ class UserController extends Controller
             throw $e;
         }
 
-        $validated['email'] = strtolower(trim($validated['email']));
+        $validated['email'] = Str::of($validated['email'])->trim()->lower()->toString();
 
         $user = User::create([
             'username' => $validated['username'],
@@ -66,9 +67,19 @@ class UserController extends Controller
                 'email',
                 Rule::unique('users')->ignore($user->id),
             ],
+            'current_password' => 'required_with:email|string',
         ]);
 
-        $validated['email'] = strtolower(trim($validated['email']));
+        if ($request->filled('current_password')) {
+            if (!Hash::check($validated['current_password'], $user->password)) {
+                return response()->json([
+                    'message' => 'Current password is incorrect.',
+                ], 422);
+            }
+            unset($validated['current_password']);
+        }
+
+        $validated['email'] = Str::of($validated['email'])->trim()->lower()->toString();
         $user->update($validated);
 
         return response()->json([
@@ -84,7 +95,7 @@ class UserController extends Controller
 
         $validated = $request->validate([
             'current_password' => 'required|string',
-            'password' => ['required', Password::min(8)->mixedCase()->numbers()],
+            'password' => ['required', Password::min(8)->mixedCase()->numbers()->symbols()],
         ]);
 
         if (!Hash::check($validated['current_password'], $user->password)) {

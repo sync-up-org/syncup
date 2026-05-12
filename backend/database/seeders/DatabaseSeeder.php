@@ -20,7 +20,7 @@ class DatabaseSeeder extends Seeder
         $password = env('SEEDER_PASSWORD');
 
         if (!$password) {
-            $password = 'SeedPass123!';
+            throw new \RuntimeException('SEEDER_PASSWORD environment variable is required.');
         }
 
         User::factory()->create([
