@@ -16,3 +16,10 @@ All notable changes to this project are documented in this file.
 - **API testing:** Postman collection with 23 requests and environment configuration
 - **Architecture:** Service layer pattern, API resource transformations, form request validation
 - **Tooling:** Vite proxy configuration, Laravel Pint, IDE helper support
+- **UI/UX redesign:** Split-screen auth pages with embedded logo SVG, staggered animations
+- **Drag and drop:** Task cards draggable between status columns with optimistic updates
+- **Design system:** OKLCH color palette, custom easing curves, semantic 4pt spacing scale
+- **Responsive layout:** Mobile-first breakpoints with column stacking, icon-only nav on small screens
+- **Favicon:** Custom abstract sync-arrow SVG for all modern browsers
+- **Error handling:** Graceful JSON parse error recovery in API client
+- **Password visibility:** Toggle button on all password fields
