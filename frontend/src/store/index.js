@@ -38,11 +38,16 @@ export const useAuthStore = defineStore('auth', {
 
     async deleteUser(id) {
       const data = await api.deleteUser(id)
-      this.logout()
+      this.clearAuth()
       return data
     },
 
-    logout() {
+    async logout() {
+      try { await api.logout() } catch {}
+      this.clearAuth()
+    },
+
+    clearAuth() {
       this.user = null
       this.token = null
       localStorage.removeItem('auth_token')

@@ -57,12 +57,13 @@ describe('useAuthStore', () => {
     expect(auth.user).toEqual(userData)
   })
 
-  it('logout clears user, token, and localStorage', () => {
+  it('logout clears user, token, and localStorage', async () => {
+    mockFetch.mockResolvedValue(mockOk({ message: 'Logged out' }))
     localStorage.setItem('auth_token', 'tok')
     const auth = useAuthStore()
     auth.token = 'tok'
     auth.user = { username: 'test' }
-    auth.logout()
+    await auth.logout()
     expect(auth.token).toBeNull()
     expect(auth.user).toBeNull()
     expect(auth.isAuthenticated).toBe(false)

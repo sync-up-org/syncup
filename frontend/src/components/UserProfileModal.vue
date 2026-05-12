@@ -64,8 +64,8 @@ const saving = ref(false)
 
 function close() { emit('close') }
 
-function handleLogout() {
-  authStore.logout()
+async function handleLogout() {
+  await authStore.logout()
   router.push('/login')
 }
 

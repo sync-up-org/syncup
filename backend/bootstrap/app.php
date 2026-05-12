@@ -23,7 +23,13 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->render(function (AuthenticationException $e, Request $request) {
             if ($request->is('api/*') || $request->expectsJson()) {
-                return response()->json(['message' => 'Unauthenticated.'], 401);
+                return response()->json(['message' => 'Unauthenticated.'], 401)
+                    ->withHeaders([
+                        'X-Frame-Options' => 'DENY',
+                        'X-Content-Type-Options' => 'nosniff',
+                        'Referrer-Policy' => 'strict-origin-when-cross-origin',
+                        'Permissions-Policy' => 'none',
+                    ]);
             }
         });
     })->create();

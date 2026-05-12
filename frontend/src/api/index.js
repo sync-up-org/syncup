@@ -59,6 +59,7 @@ export const api = {
   // Auth
   register: (payload) => request('/register', { method: 'POST', body: payload }),
   login: (payload) => request('/login', { method: 'POST', body: payload }),
+  logout: () => request('/v1/logout', { method: 'POST' }),
 
   // Users
   getProfile: () => request('/v1/users/me'),

@@ -125,9 +125,11 @@ class UserController extends Controller
         ]);
     }
 
-    public function destroy(Request $request, User $user)
+    public function destroy(Request $request, string $id)
     {
-        if ((int) $user->id !== (int) $request->user()->id) {
+        $user = User::find($id);
+
+        if (!$user || (int) $user->id !== (int) $request->user()->id) {
             return response()->json([
                 'message' => 'Forbidden',
             ], 403);
