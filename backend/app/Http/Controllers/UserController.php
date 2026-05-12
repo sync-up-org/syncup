@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
 {
@@ -14,9 +16,7 @@ class UserController extends Controller
      */
     public function index(Request $request)
     {
-        $user = $request->user();
-
-        return $user;
+        return new UserResource($request->user());
     }
 
     /**
@@ -24,23 +24,33 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-         $validated = $request->validate([
-        'username' => 'required|string|max:255',
-        'email' => 'required|string|max:255|unique:users',
-        'password' => 'required|string|min:8',
-    ]);
+        try {
+            $validated = $request->validate([
+                'username' => 'required|string|max:255',
+                'email' => 'required|string|email|max:255|unique:users',
+                'password' => ['required', 'string', 'min:8'],
+            ]);
+        } catch (ValidationException $e) {
+            if ($e->validator->errors()->has('email')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Registration failed. Please check your input.',
+                ], 422);
+            }
+            throw $e;
+        }
 
-    $user = User::create([
-        'username' => $validated['username'],
-        'email' => $validated['email'],
-        'password' => Hash::make($validated['password']),
-    ]);
+        $user = User::create([
+            'username' => $validated['username'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+        ]);
 
-    return response()->json([
-        'success' => 'true',
-        'message' => 'Registered user successfully',
-        'data' => $user
-    ], 201);
+        return response()->json([
+            'success' => true,
+            'message' => 'Registered user successfully',
+            'user_id' => $user->id,
+        ], 201);
     }
 
     /**
@@ -71,20 +81,26 @@ class UserController extends Controller
         $user->update($validated);
 
         return response()->json([
-            'success' => 'true',  
+            'success' => true,
             'message' => 'User updated successfully',
-            'data' => $user
+            'data' => new UserResource($user),
         ], 200);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(User $user)
+    public function destroy(Request $request, User $user)
     {
+        if ((int) $user->id !== (int) $request->user()->id) {
+            return response()->json([
+                'message' => 'Forbidden',
+            ], 403);
+        }
+
         $user->delete();
         return response()->json([
-            'message' => 'Sucessfully Delete User',
+            'message' => 'Successfully deleted user',
         ]);
     }
 }

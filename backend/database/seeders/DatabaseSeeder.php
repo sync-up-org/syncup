@@ -17,10 +17,12 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
+        $password = env('SEEDER_PASSWORD', 'passwordkeren123');
+
         User::factory()->create([
             'username' => 'Test User',
             'email' => 'test@example.com',
-            'password' => 'passwordkeren123',
+            'password' => $password,
         ]);
     }
 }

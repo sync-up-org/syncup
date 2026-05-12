@@ -17,5 +17,5 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
     Route::patch('users/update', [UserController::class, 'update']);
 });
 
-Route::post('/register', [UserController::class, 'store']);
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register', [UserController::class, 'store'])->middleware('throttle:register');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
