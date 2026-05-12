@@ -33,7 +33,19 @@ async function request(path, options = {}) {
   }
 
   if (!res.ok) {
-    const msg = data.message || data.error || `Request failed (${res.status})`
+    const rawMsg = data.message || data.error || ''
+    let msg = rawMsg || `Request failed (${res.status})`
+
+    if (rawMsg.includes('credentials do not match') || rawMsg.includes('authenticated')) {
+      msg = 'Invalid credentials. Please try again.'
+    } else if (rawMsg.includes('Registration failed') || rawMsg.includes('already been taken')) {
+      msg = 'Registration failed. Please check your input.'
+    } else if (rawMsg.includes('Forbidden') || rawMsg.includes('does not own')) {
+      msg = 'You do not have permission to perform this action.'
+    } else if (rawMsg.includes('not found') || rawMsg.includes('No query results')) {
+      msg = 'The requested resource was not found.'
+    }
+
     const err = new Error(msg)
     err.status = res.status
     err.data = data

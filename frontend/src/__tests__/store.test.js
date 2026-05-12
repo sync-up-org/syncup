@@ -43,7 +43,7 @@ describe('useAuthStore', () => {
   it('login throws on failure', async () => {
     mockFetch.mockResolvedValue(mockErr(422, 'These credentials do not match our records.'))
     const auth = useAuthStore()
-    await expect(auth.login('a@b.com', 'wrong')).rejects.toThrow('These credentials do not match our records.')
+    await expect(auth.login('a@b.com', 'wrong')).rejects.toThrow('Invalid credentials')
     expect(auth.isAuthenticated).toBe(false)
   })
 

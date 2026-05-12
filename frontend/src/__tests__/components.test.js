@@ -53,7 +53,7 @@ describe('LoginView', () => {
 
     // Wait for async error to render
     await new Promise(r => setTimeout(r, 100))
-    expect(wrapper.text()).toContain('credentials do not match')
+    expect(wrapper.text()).toContain('Invalid credentials')
   })
 
   it('has a link to register page', () => {
