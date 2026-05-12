@@ -9,3 +9,30 @@ frontend/node_modules/
 frontend/dist/
 frontend/.env
 frontend/.env.local
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Ignore all general markdown
+*.md
+
+# Keep .md standard files
+!README.md
+!LICENSE.md
+!CONTRIBUTING.md
+!CHANGELOG.md
+!CODE_OF_CONDUCT.md
+!SECURITY.md
