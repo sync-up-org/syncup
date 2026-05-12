@@ -25,7 +25,14 @@ class StoreTaskRequest extends FormRequest
         return [
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'status' => 'sometimes|in:pending,completed,incomplete',
+            'status' => 'in:pending,completed,incomplete',
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if (!$this->has('status')) {
+            $this->merge(['status' => 'pending']);
+        }
     }
 }

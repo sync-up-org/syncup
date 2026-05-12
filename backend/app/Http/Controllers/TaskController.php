@@ -17,14 +17,20 @@ class TaskController extends Controller
      */
     public function index(Request $request)
     {
+        $validated = $request->validate([
+            'status' => 'nullable|string|in:pending,completed,incomplete',
+            'search' => 'nullable|string|max:255',
+        ]);
+
         $query = $request->user()->tasks()->with('user');
 
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
+        if ($request->filled('status')) {
+            $query->where('status', $validated['status']);
         }
 
-        if ($request->has('search')) {
-            $query->where('title', 'like', '%' . $request->search . '%');
+        if ($request->filled('search')) {
+            $search = str_replace(['%', '_'], ['\%', '\_'], $validated['search']);
+            $query->where('title', 'like', '%' . $search . '%');
         }
 
         $tasks = $query->latest()->paginate(15);
@@ -58,7 +64,7 @@ class TaskController extends Controller
      */
     public function update(Request $request, Tasks $task)
     {
-        if ($task->users_id !== Auth::id()) {
+        if ((int) $task->user_id !== (int) Auth::id()) {
             return response()->json([
                 'status'  => 'error',
                 'message' => 'Forbidden: You do not own this task.'
@@ -68,7 +74,7 @@ class TaskController extends Controller
         $validated = $request->validate([
             'title'       => 'sometimes|required|string|max:255',
             'description' => 'sometimes|required|string',
-            'status'      => 'sometimes|required|string',
+            'status'      => 'sometimes|required|string|in:pending,completed,incomplete',
         ]);
 
         try {
@@ -83,7 +89,6 @@ class TaskController extends Controller
             return response()->json([
                 'status'  => 'error',
                 'message' => 'Update failed',
-                'debug'   => config('app.debug') ? $e->getMessage() : null
             ], 500);
         }
     }
@@ -94,6 +99,12 @@ class TaskController extends Controller
      */
     public function destroy(Tasks $task)
     {
+        if ((int) $task->user_id !== (int) Auth::id()) {
+            return response()->json([
+                'message' => 'Forbidden',
+            ], 403);
+        }
+
         $task->delete();
         return response()->json([
             'message' => 'Sucessfully Delete Task',

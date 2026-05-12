@@ -24,23 +24,30 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-         $validated = $request->validate([
-        'username' => 'required|string|max:255',
-        'email' => 'required|string|max:255|unique:users',
-        'password' => 'required|string|min:8',
-    ]);
+        $validated = $request->validate([
+            'username' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255',
+            'password' => ['required', 'string', 'min:8'],
+        ]);
 
-    $user = User::create([
-        'username' => $validated['username'],
-        'email' => $validated['email'],
-        'password' => Hash::make($validated['password']),
-    ]);
+        if (User::where('email', $validated['email'])->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Registration failed. Please check your input.',
+            ], 422);
+        }
 
-    return response()->json([
-        'success' => 'true',
-        'message' => 'Registered user successfully',
-        'data' => $user
-    ], 201);
+        $user = User::create([
+            'username' => $validated['username'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Registered user successfully',
+            'user_id' => $user->id,
+        ], 201);
     }
 
     /**
@@ -82,6 +89,12 @@ class UserController extends Controller
      */
     public function destroy(User $user)
     {
+        if ((int) $user->id !== (int) request()->user()->id) {
+            return response()->json([
+                'message' => 'Forbidden',
+            ], 403);
+        }
+
         $user->delete();
         return response()->json([
             'message' => 'Sucessfully Delete User',

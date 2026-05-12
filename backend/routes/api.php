@@ -18,4 +18,4 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
 });
 
 Route::post('/register', [UserController::class, 'store']);
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
