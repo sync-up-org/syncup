@@ -7,28 +7,23 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index(Request $request)
     {
         return new UserResource($request->user());
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
         try {
             $validated = $request->validate([
                 'username' => 'required|string|max:255',
                 'email' => 'required|string|email|max:255|unique:users',
-                'password' => ['required', 'string', 'min:8'],
+                'password' => ['required', Password::min(8)->mixedCase()->numbers()],
             ]);
         } catch (ValidationException $e) {
             if ($e->validator->errors()->has('email')) {
@@ -39,6 +34,8 @@ class UserController extends Controller
             }
             throw $e;
         }
+
+        $validated['email'] = strtolower(trim($validated['email']));
 
         $user = User::create([
             'username' => $validated['username'],
@@ -53,21 +50,14 @@ class UserController extends Controller
         ], 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(string $id)
     {
         //
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request)
     {
- 
-    $user = $request->user();
+        $user = $request->user();
 
         $validated = $request->validate([
             'username' => 'required|string|max:255',
@@ -78,6 +68,7 @@ class UserController extends Controller
             ],
         ]);
 
+        $validated['email'] = strtolower(trim($validated['email']));
         $user->update($validated);
 
         return response()->json([
@@ -87,9 +78,30 @@ class UserController extends Controller
         ], 200);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
+    public function updatePassword(Request $request)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'current_password' => 'required|string',
+            'password' => ['required', Password::min(8)->mixedCase()->numbers()],
+        ]);
+
+        if (!Hash::check($validated['current_password'], $user->password)) {
+            return response()->json([
+                'message' => 'Current password is incorrect.',
+            ], 422);
+        }
+
+        $user->update([
+            'password' => Hash::make($validated['password']),
+        ]);
+
+        return response()->json([
+            'message' => 'Password updated successfully.',
+        ]);
+    }
+
     public function destroy(Request $request, User $user)
     {
         if ((int) $user->id !== (int) $request->user()->id) {

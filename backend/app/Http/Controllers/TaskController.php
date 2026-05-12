@@ -23,7 +23,7 @@ class TaskController extends Controller
             'search' => 'nullable|string|max:255',
         ]);
 
-        $query = $request->user()->tasks()->with('user');
+        $query = $request->user()->tasks();
 
         if ($request->filled('status')) {
             $query->where('status', $validated['status']);
@@ -31,7 +31,7 @@ class TaskController extends Controller
 
         if ($request->filled('search')) {
             $search = str_replace(['%', '_'], ['\%', '\_'], $validated['search']);
-            $query->where('title', 'like', '%' . $search . '%');
+            $query->whereRaw('title LIKE ? ESCAPE ?', ['%' . $search . '%', '\\']);
         }
 
         $tasks = $query->latest()->paginate(15);
@@ -70,7 +70,7 @@ class TaskController extends Controller
 
         $validated = $request->validate([
             'title'       => 'sometimes|required|string|max:255',
-            'description' => 'sometimes|required|string',
+            'description' => 'sometimes|required|string|max:10000',
             'status'      => 'sometimes|required|string|in:pending,completed,incomplete',
         ]);
 
